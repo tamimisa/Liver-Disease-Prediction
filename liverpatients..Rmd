@@ -1,0 +1,1705 @@
+---
+title: "R Notebook"
+output: html_document
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+# Problem
+
+our dataset contains information on patients, including their age,
+gender, various test results, and whether they have liver disease or
+not. The problem is to develop a model that can accurately predict the
+presence of liver disease based on these clinical features. Early
+detection of liver disease is crucial for effective treatment and
+management. By accurately predicting the disease, healthcare
+professionals can intervene timely and provide appropriate medical care,
+leading to improved patient outcomes and efficient allocation of
+resources.
+
+# Data Mining Task
+
+The dataset requires data mining tasks of classification and clustering.
+
+Classification involves predicting whether a patient has a liver disease
+or not based on the class label "dataset", indicates (1 diseases or 2 no
+diseases ). The goal is to develop an accurate model for classifying new
+patients into disease categories.
+
+Clustering aims to identify natural groupings or patterns within the
+data. By analyzing attribute similarities, clusters can be discovered.
+
+# Data
+
+link to the source of our dataset:
+{<https://www.kaggle.com/uciml/indian-liver-patient-records>}
+
+general info about the dataset:
+
+Number of attributes: 11
+
+age (numeric) gender (symmetric binary) Total_Bilirubin (numeric)
+direct_Bilirubin (numeric) Alkaline_Phosphotase (numeric)
+Alamine_Aminotransferase (numeric) Aspartate_Aminotransferase (numeric)
+Total_Protiens (numeric) Albumin (numeric) Albumin_and_Globulin_Ratio
+(numeric) Dataset (asymmetric binary)
+
+Number of objects: 583 objects
+
+class label :(dataset) which indicates (1 disease or 2 no disease)
+
+### Importing the dataset
+
+read file named "indian_liver_patient" and save it in dataframe named
+"dataset"
+
+```{r}
+dataset = read.csv("C:\\Users\\User\\Desktop\\dataMining\\indian_liver_patient (1).csv")
+```
+
+### raw data and summary of the dataset
+
+```{r}
+View(dataset)
+str(dataset)
+summary(dataset)
+```
+
+as shown in the result, we have 4 null values in
+Albumin_and_Globulin_Ratio column we can also see there are some values
+are quite distant from the 3rd Qu values, in Alamine_Aminotransferase
+the max value is 2000 but the 3rd Qu is 60.5, Also in
+Alkaline_Phosphotase the max is 2110 but the 3rd Qu is 298 this scenario
+is repeating with many attributes which raises the question of whether
+or not we have outliers in the Dataset.
+
+the range for the age attribute is quite interesting, since the min
+value is 4 and the max value is 90. the age 4 is quite young which is
+really concerning considering how dangerous the disease is. we will show
+more information about all the attributes through the boxplots.
+
+## Dealing with the missing values
+
+as shown previously we had 4 null values in Albumin_and_Globulin_Ratio
+column, as they can bias the results thus, we decided its best to
+replace them with the mean value of the column, since deleting those
+tuples means we will be missing out on some valuable data.
+
+```{r}
+dataset$Albumin_and_Globulin_Ratio = ifelse(is.na(dataset$Albumin_and_Globulin_Ratio), ave(dataset$Albumin_and_Globulin_Ratio, FUN =function(x) mean(x,na.rm=TRUE)), dataset$Albumin_and_Globulin_Ratio)
+sum(is.na(dataset))
+summary(dataset$Albumin_and_Globulin_Ratio)
+```
+
+good, now the null values are replaced with the mean value and to make
+sure we checked if the Dataset has any null values and the result is 0
+which means there is none.
+
+## Box plot for Age
+
+```{r}
+boxplot(dataset$Age, main = "Age", ylab = "Age")
+```
+
+the box plot shows no outliers and we can tell that the 1st Qu is at
+around 33 and the 3rd Qu is at 58, the range is between 4(min) and
+90(max) and the median is at around 45. yet again the young ages are
+really concerning, but the median seems quite normal.
+
+## Box plot for Total Bilirubin
+
+```{r}
+boxplot(dataset$Total_Bilirubin, main = "Total Bilirubin", ylab = "Total Bilirubin")
+```
+
+the boxplot shows many outliers above the max value, lets investigate.
+the min value is 0.4 and the max is 75 (range between 0.4 - 75) the 3rd
+Qu is at 2.6, there is a big shift between the 3rd Qu and the max, but
+many values are between 2.6 and 38 which means these are not true
+outliers rather the boxplot showed them to be so, even the value 75 is
+quite distant, The range between the 3rd Qu and 38 (where many values
+are gathering) is quite big which indicates the range would be large.
+
+## Box plot for Direct Bilirubin
+
+```{r}
+boxplot(dataset$Direct_Bilirubin, main = "Direct Bilirubin", ylab = "Direct Bilirubin")
+```
+
+Again we could see from the boxplot there are many outliers, so the min
+value is 0.1 and the max is 19.7 (range between 0.1 - 19.7)the median is
+0.3 and the 3rd Qu is 1.3, we can see a big gap between the 3rd Qu and
+the max value but there are many values that are gathering between 1.3
+and 12 which indactes these are not true outliers since they are so
+redundant this also means the rest of the outliers are not true either
+since they are close to 12, again the box plot mistakenly considered
+them to be outliers.
+
+## Box plot for Alkaline Phosphotase
+
+```{r}
+boxplot(dataset$Alkaline_Phosphotase, main = "Alkaline Phosphotase", ylab = "Alkaline Phosphotase")
+```
+
+the boxplot shows many outliers gathering between 500 and 1500, the min
+is 63 and the max is 2110 (range between 63 - 2110) and the median is
+208 the 3rd Qu is 298, there is a big shift between the 3rd Qu and the
+max. yet again since there are many high values it means these are not
+true outliers.
+
+## Box plot for Alamine Aminotransferase
+
+```{r}
+boxplot(dataset$Alamine_Aminotransferase, main = "Alamine Aminotransferase", ylab = "Alamine Aminotransferase")
+```
+
+this boxplot is slightly diffirent since the gathering is concentrated
+alomst under 600 but there is a small gathering above them, for the min
+value we have 10, max 2000 (range between 10 - 2000) median 35 and 3rd
+Qu 60, again we can see a big shift but the range is big hence why the
+boxplot considered many values to be outliers.
+
+## Box plot for Aspartate Aminotransferase
+
+```{r}
+boxplot(dataset$Aspartate_Aminotransferase, main = "Aspartate Aminotransferase", ylab = "Aspartate Aminotransferase")
+```
+
+this boxplot shows the gathering stops at almost 1000 but we have few
+values that are reaching 5000, the max is 4929 and the min is 10 (range
+between 10 - 4929), the median 42 and the 3rd Qu 87. there is no doubt
+that the values under 2000 are not outliers, values higher than that are
+also near to them hence we will not be considering them to be outliers.
+
+## Box plot for Total Protiens
+
+```{r}
+boxplot(dataset$Total_Protiens, main = "Total Protiens", ylab = "Total Protiens")
+```
+
+the boxplot shows some outliers above the max and under the min values,
+the min is 2.7 and the max is 9.6 (range between 2.7 - 9.6), the 1st Qu
+is 5.8 and the 3rd Qu is 7.2, the median is 6.6, by observing the values
+the outliers shown on the boxplot are definitley are not true outliers
+since they are so close to each other.
+
+## Box plot for Albumin
+
+```{r}
+boxplot(dataset$Albumin, main = "Albumin", ylab="Albumin")
+```
+
+the boxplot shows no outliers and the min value is 0.9 the max is 5.5
+(range between 0.9 - 5.5) and the median is 3.1 the 3rd Qu is 3.8 the
+1st Qu is 2.6 we can see from the values that the range is quite small
+compared to other attributes that we went through we will have to deal
+with that later.
+
+```{r}
+boxplot(dataset$Albumin_and_Globulin_Ratio, main = "Albumin and Globulin Ratio", ylab = "Albumin_and Globulin Ratio")
+```
+
+the boxplot is showing the min value to be 0.3 and the max to be 2.8
+(range between 0.3 - 2.8), the median to be 0.93 and 3rd Qu of 1.1 and
+1st Qu of 0.7, the outliers are shown to start after approximately 1.7
+but even the highest outlier is close to the 3rd Qu which means these
+are not true outliers.
+
+## Dealing with the Outliers
+
+Although the box plots show some extreme outliers we will not be
+removing them. mainly because most of them are not true outliers. also,
+According to a doctor those values are possible in liver disease
+patients, and each patient tests can vary greatly so we decided its best
+to keep those values as it will help the classification procedure.
+
+# Data preprocessing
+
+## encoding cateogrial value (gender)
+
+convert the gender value to numeric to make classification easier, this
+step will result in making the male = to 0 and female = to 1.
+
+```{r}
+dataset$Gender[dataset$Gender == "Male"] <- 0
+dataset$Gender[dataset$Gender == "Female"] <- 1
+dataset$Gender=as.numeric(dataset$Gender)
+head(dataset)
+```
+
+## normalize all numeric attributes
+
+since the range for each attribute is quite different we decided it was
+best to normalize the attributes and unify their scale, the new range
+for the attributes is from 0 - 1.
+
+```{r}
+normalize <- function(x) {return ((x - min(x)) / (max(x) - min(x)))}
+dataset$Total_Bilirubin = normalize(dataset$Total_Bilirubin)
+dataset$Direct_Bilirubin = normalize(dataset$Direct_Bilirubin)
+dataset$Alkaline_Phosphotase = normalize(dataset$Alkaline_Phosphotase)
+dataset$Alamine_Aminotransferase = normalize(dataset$Alamine_Aminotransferase)
+dataset$Aspartate_Aminotransferase = normalize(dataset$Aspartate_Aminotransferase)
+dataset$Total_Protiens = normalize(dataset$Total_Protiens)
+dataset$Albumin = normalize(dataset$Albumin)
+dataset$Albumin_and_Globulin_Ratio = normalize(dataset$Albumin_and_Globulin_Ratio)
+head(dataset)
+```
+
+## check correlation
+
+```{r}
+cor(dataset$Age,dataset$Dataset)
+cor(dataset$Aspartate_Aminotransferase,dataset$Dataset)
+cor(dataset$Alkaline_Phosphotase,dataset$Dataset)
+cor(dataset$Alamine_Aminotransferase,dataset$Dataset)
+cor(dataset$Direct_Bilirubin,dataset$Dataset)
+cor(dataset$Total_Bilirubin,dataset$Dataset)
+cor(dataset$Total_Protiens,dataset$Dataset)
+cor(dataset$Albumin,dataset$Dataset)
+cor(dataset$Albumin_and_Globulin_Ratio,dataset$Dataset)
+
+chisq.test(dataset$Gender, dataset$Dataset)
+```
+
+we can see there are 4 attributes that are positively correlated to the
+class label (Dataset), which are: Gender, Albumin_and_Globulin_Ratio,
+Total_Protiens, Albumin. these attributes will be good for splitting the
+tree in the classification.
+
+## show dataset after preprocessing
+
+```{r}
+head(dataset)
+```
+
+# Data visualization
+
+# Create a scatterplot for Alamine_Aminotransferase and Aspartate_Aminotransferase
+
+```{r}
+ plot(dataset$Alamine_Aminotransferase, 
+     dataset$Aspartate_Aminotransferase, 
+     xlab = "Alamine Aminotransferase", 
+     ylab = "Aspartate Aminotransferase",
+     main = "Scatterplot of Alamine Aminotransferase vs. Aspartate Aminotransferase",
+     pch = 16, col = "blue")
+```
+
+Alamine_Aminotransferase, Aspartate_Aminotransferase attributes seem to
+be correlated (linear relationship), we can see from the plot there is a
+major gathering between 0 to 500 on the x-axis and from 0 to 1000 at the
+y-axis we can also see that some points are extremely far from the rest
+of the data.
+
+# Create a bar plot
+
+```{r}
+barplot(table(dataset$Gender),
+        ylab = "Frequency",
+        xlab = "Gender",
+        col =" blue")
+```
+
+we can see from the plot that female patients are less than half the
+number of male patients which means that the dataset is unbalanced.
+
+# carete a scatter plot for Age and class label (dataset)
+
+```{r}
+plot(dataset$Dataset, 
+     dataset$Age, 
+     xlab = "dataset", 
+     ylab = "Age",
+     main = "Age vs. dataset",
+     pch = 16, col = "blue")
+ 
+```
+
+from the plot we can see the same age groups can be found in both
+patients with liver disease(1) and patients without liver disease(2),
+which indicates the variety in ages. what is concerning though is many
+young kids are diagnosed with liver disease, we thought its highly
+unlikely for kids to be diagnosed with such diseases but as it turns out
+this is not the case, in fact less older patients are diagnosed with
+liver disease.
+
+# carete a scatter plot for Total_Bilirubin and class label (dataset)
+
+```{r}
+plot(dataset$Dataset, 
+     dataset$Total_Bilirubin, 
+     xlab = "dataset", 
+     ylab = "Total_Bilirubin",
+     main = "Total_Bilirubin vs. dataset",
+     pch = 16, col = "blue")
+```
+
+from the graph it seems the higher the Total_Bilirubin the more liklely
+the patient is diagnosed with liver disease(1).
+
+# carete a scatter plot for Direct_Bilirubin and class label (dataset)
+
+```{r}
+plot(dataset$Dataset, 
+     dataset$Direct_Bilirubin, 
+     xlab = "dataset", 
+     ylab = "Direct_Bilirubin",
+     main = "Direct_Bilirubin vs. dataset",
+     pch = 16, col = "blue")
+```
+
+Again, from the graph it seems the higher the Direct_Bilirubin the more
+liklely the patient is diagnosed with liver disease(1).
+
+# carete a scatter plot for Alkaline_Phosphotase and class label (dataset)
+
+```{r}
+plot(dataset$Dataset, 
+     dataset$Alkaline_Phosphotase, 
+     xlab = "dataset", 
+     ylab = "Alkaline_Phosphtase",
+     main = "Alkaline_Phosphtase vs. dataset",
+     pch = 16, col = "blue")
+```
+
+the plot shows that the patients diagnosed with liver disease(1)
+experience high levels of Alkaline_Phosphotase, it also show one point
+where the patient is not diagnosed with liver disease(2) but experience
+a relatively high level of Alkaline_Phosphotase.
+
+# carete a scatter plot for Alamine_Aminotransferase and class label (dataset)
+
+```{r}
+plot(dataset$Dataset, 
+     dataset$Alamine_Aminotransferase, 
+     xlab = "dataset", 
+     ylab = "Alamine_Aminotransferase",
+     main = "Alamine_Aminotransferase vs. dataset",
+     pch = 16, col = "blue")
+```
+
+in this plot we can see that patients not diagnosed with liver
+disease(2) have low levels of Alamine_Aminotransferase its range is
+between 0 ans 0.1, while patients diagnosed with liver disease have
+rally high levels of Alamine_Aminotransferase.
+
+# carete a scatter plot for Aspartate_Aminotransferase and class label (dataset)
+
+```{r}
+plot(dataset$Dataset, 
+     dataset$Aspartate_Aminotransferase, 
+     xlab = "dataset", 
+     ylab = "Aspartate_Aminotransferase",
+     main = "Aspartate_Aminotransferase vs. dataset",
+     pch = 16, col = "blue")
+```
+
+as we can see from the plot, most paitents diagnosed with liver
+disease(1) have levels lower than 0.4 and few of them have values
+greater than 0.4, this could indicate the more of this enzyme means
+there might problems with the liver. patients not diagnosed with liver
+disease(2) have levels less than 0.1 .
+
+# carete a scatter plot for Total_Protiens and class label (dataset)
+
+```{r}
+plot(dataset$Dataset, 
+     dataset$Total_Protiens, 
+     xlab = "dataset", 
+     ylab = "Total_Protiens",
+     main = "Total_Protiens vs. dataset",
+     pch = 16, col = "blue")
+```
+
+this is quite intersting, form the plot both patients with and without
+liver disease have almost the same levels of Total_Protiens, but we can
+see that patients with liver disease (1) have values less than 0.2 and
+values higher than 0.8 which is not present in patients without liver
+disease(2).
+
+# carete a scatter plot for Albumin and class label (dataset)
+
+```{r}
+plot(dataset$Dataset, 
+     dataset$Albumin, 
+     xlab = "dataset", 
+     ylab = "Albumin",
+     main = "Albumin vs. dataset",
+     pch = 16, col = "blue")
+```
+
+again we see both patients with and without liver disease have almost
+the same levels of Albumin, but yet again we see some values with the
+patients diagnosed with liver disease(1) that are less than 0.1 and more
+than 0.9 which is not present with patients not diagnosed with liver
+disease(2).
+
+# carete a scatter plot for Albumin_and_Globulin_Ratio and class label (dataset)
+
+```{r}
+plot(dataset$Dataset, 
+     dataset$Albumin, 
+     xlab = "dataset", 
+     ylab = "Albumin_and_Globulin_Ratio",
+     main = "Albumin_and_Globulin_Ratio vs. dataset",
+     pch = 16, col = "blue")
+```
+
+again we see both patients with and without liver disease have almost
+the same levels of Albumin, but yet again we see some values with the
+patients diagnosed with liver disease(1) that are less than 0.1 and more
+than 0.9 which is not present with patients not diagnosed with liver
+disease(2).
+
+# create histogram to see the number of patients with liver disease
+
+```{r}
+hist(dataset$Dataset,
+     col  = "blue", 
+     xlab = "Patients",    
+     ylab = "Frequency",      
+     main = "patient with liver disease or no disease")
+```
+
+we can see from the plot that patients diagnosed with liver disease are
+almost 2x patients not diagnosed with liver disease in the dataset
+which, again indecates that the dataset is unbalanced we will have to
+pay attention to that when it comes to the classification procedure.
+
+```{r}
+prdataset = read.csv("C:\\Users\\User\\Desktop\\dataMining\\proccesseddataset (1).csv")
+```
+
+# Data Mining Technique
+
+in classification:
+
+1\. Decision Trees:
+
+Methods Used: Information Gain, Gain Ratio, Gini Index
+
+R Packages: rpart, rpart.plot
+
+Reasoning: Decision trees are used for predictive modeling and
+understanding variable interactions. We applied different splitting
+criteria (information gain, gain ratio, Gini index) to build decision
+trees and predict the outcome of liver disease based on various
+attributes. We evaluated model performance using metrics like accuracy,
+sensitivity, specificity, precision, recall, and confusion matrices.
+
+2\. Holdout Method for Training and Testing Sets:
+
+R Packages: caret, caTools
+
+Reasoning: The holdout method involves splitting the dataset into
+separate training and testing sets, typically by reserving a certain
+portion for training and the rest for testing. This technique allows the
+model to be trained on one set of data and evaluated on a completely
+independent set.
+
+other R Packages we used it:(RWeka, C50, e1071, boot) each package
+serves specific purposes within the of machine learning, statistical
+analysis, and resampling techniques, providing tools and implementations
+for various algorithms and methodologies.
+
+The goal is to develop an accurate model for classifying new patients
+into disease categories(1 diseases or 2 no diseases ).
+
+in clustring:
+
+Methods Used: K-Means Clustering:
+
+R Packages: stats, fpc, factoextra
+
+Reasoning: K-Means clustering is an unsupervised learning technique used
+to group similar instances together based on their features. We applied
+K-Means with varying values of k (number of clusters) to Identify hidden
+patterns or groupings within the patient data related to liver disease.
+We evaluated clustering performance using metrics like Average
+Silhouette Width, Within-Cluster Sum of Squares, BCubed Precision, and
+BCubed Recall.
+
+# classification
+
+we will be use holdout method
+
+```{r}
+library(RWeka)
+library(caret)
+library(e1071)
+library(C50)
+library(boot)
+library(caTools)
+library(rpart)
+library(rpart.plot)
+```
+
+```{r}
+# Set the seed for reproducibility
+set.seed(123)
+```
+
+# size for training 70% using holdout method
+
+tree of information gain: (best tree)
+
+![](images/Screenshot%202023-12-02%20131025-01.png)
+
+tree of gain ratio:
+
+![](images/Screenshot%202023-12-02%20131545.png)
+
+tree of Gini index:
+
+![](images/Screenshot%202023-12-02%20131715.png)
+
+```{r}
+# Subset the first dataset
+df1 <- prdataset[which(prdataset$Dataset == 1),]
+
+# Subset the second dataset
+df2 <- prdataset[which(prdataset$Dataset == 2),]
+
+# Splitting the first dataset
+n1 <- nrow(df1)  # Total number of rows in df1
+train_indices1 <- sample(1:n1, 0.7 * n1, replace = FALSE)  # Randomly select 70% of indices for training
+test_indices1 <- setdiff(1:n1, train_indices1)  # Remaining indices for testing
+
+# Splitting the second dataset
+n2 <- nrow(df2)  # Total number of rows in df2
+train_indices2 <- sample(1:n2, 0.7 * n2, replace = FALSE)  # Randomly select 70% of indices for training
+test_indices2 <- setdiff(1:n2, train_indices2)  # Remaining indices for testing
+
+# Creating the training and testing sets
+train_df1 <- df1[train_indices1, ]
+test_df1 <- df1[test_indices1, ]
+train_df2 <- df2[train_indices2, ]
+test_df2 <- df2[test_indices2, ]
+
+# Combining the 70% training sets
+combined_train <- rbind(train_df1, train_df2)
+
+# Combining the 30% testing sets
+combined_test <- rbind(test_df1, test_df2)
+```
+
+## Build the decision tree using information gain
+
+```{r}
+decision_tree <- rpart(Dataset ~ ., data = combined_train, method = "class", parms = list(split = "information"))
+```
+
+### Plot the decision tree
+
+```{r}
+rpart.plot(decision_tree)
+```
+
+the root node of interest in this data is "Direct_Bilirubin." This means
+that the decision tree starts by splitting the data based on the value
+of the "Direct_Bilirubin" feature.
+
+The decision tree then branches out to other internal nodes, such as
+"Alamine_Aminotransferase," "Age," "Alkaline_Phosphotase,"
+"Total_Bilirubin," "Albumin," and "Total_Protiens."
+
+The leaf nodes in the decision tree represent the final predictions or
+decisions. there are two leaf nodes labeled as 1 and 2.
+
+### Make predictions on the testing set
+
+```{r}
+predictions <- predict(decision_tree, newdata = combined_test, type = "class")
+```
+
+### Compare the predictions with the actual values
+
+```{r}
+table(predictions, combined_test$Dataset)
+predictions <- factor(predictions, levels = c("1", "2"))
+combined_test$Dataset <- factor(combined_test$Dataset, levels = c("1", "2"))
+
+confusionMatrix(predictions, combined_test$Dataset)
+```
+
+Accuracy (0.6875): The model's predictions are correct approximately
+68.75% of the time.
+
+Precision (0.7465): About 74.65% of the instances predicted as positive
+are actually positive.
+
+Sensitivity (0.8480): The model correctly identifies about 84.80% of the
+actual positive instances.
+
+Specificity (0.2941): The model correctly identifies only about 29.41%
+of the actual negative instances.
+
+the model demonstrates a relatively high sensitivity, indicating its
+effectiveness in detecting positive instances. However, it has
+limitations in accurately identifying negative instances, as shown by
+the low specificity. The precision indicates that the model is
+reasonably good at predicting positive instances, with a precision of
+74.65%.
+
+## Build the decision tree using gain ratio
+
+```{r}
+decision_tree <- rpart(Dataset ~ ., data = combined_train, method = "class", parms = list(split = "gain"))
+```
+
+### Plot the decision tree
+
+```{r}
+rpart.plot(decision_tree)
+```
+
+the root node of interest in this data is "Total_Bilirubin." This means
+that the decision tree starts by splitting the data based on the value
+of the "Total_Bilirubin" feature.
+
+The decision tree then branches out to other internal nodes, such as
+"Alkaline_Phosphotase," "Alamine_Aminotransferase," "Albumin," "Age," .
+
+The leaf nodes in the decision tree represent the final predictions or
+decisions. there are two leaf nodes labeled as 1 and 2.
+
+### Make predictions on the testing set
+
+```{r}
+predictions <- predict(decision_tree, newdata = combined_test, type = "class")
+```
+
+### Compare the predictions with the actual values
+
+```{r}
+table(predictions, combined_test$Dataset)
+predictions <- factor(predictions, levels = c("1", "2"))
+combined_test$Dataset <- factor(combined_test$Dataset, levels = c("1", "2"))
+
+confusionMatrix(predictions, combined_test$Dataset)
+```
+
+Accuracy (0.6875): The model's predictions are correct approximately
+68.75% of the time.
+
+Precision (0.7465): About 74.65% of the instances predicted as positive
+are actually positive.
+
+Sensitivity (0.8480): The model correctly identifies about 84.80% of the
+actual positive instances.
+
+Specificity (0.2941): The model correctly identifies only about 29.41%
+of the actual negative instances.
+
+the model demonstrates a relatively high sensitivity, indicating its
+effectiveness in detecting positive instances. However, it has
+limitations in accurately identifying negative instances, as shown by
+the low specificity. The precision indicates that the model is
+reasonably good at predicting positive instances, with a precision of
+74.65%.
+
+## Build the decision tree using the Gini index
+
+```{r}
+decision_tree <- rpart(Dataset ~ ., data = combined_train, method = "class")
+```
+
+### Plot the decision tree
+
+```{r}
+rpart.plot(decision_tree)
+```
+
+the root node of interest in this data is "Total_Bilirubin." This means
+that the decision tree starts by splitting the data based on the value
+of the "Total_Bilirubin" feature.
+
+The decision tree then branches out to other internal nodes, such as
+"Alkaline_Phosphotase," "Alamine_Aminotransferase," "Albumin," "Age".
+
+The leaf nodes in the decision tree represent the final predictions or
+decisions. there are two leaf nodes labeled as 1 and 2.
+
+### Make predictions on the testing set
+
+```{r}
+predictions <- predict(decision_tree, newdata = combined_test, type = "class")
+```
+
+### Compare the predictions with the actual values
+
+```{r}
+table(predictions, combined_test$Dataset)
+predictions <- factor(predictions, levels = c("1", "2"))
+combined_test$Dataset <- factor(combined_test$Dataset, levels = c("1", "2"))
+
+confusionMatrix(predictions, combined_test$Dataset)
+```
+
+Accuracy (0.6875): The model's predictions are correct approximately
+68.75% of the time.
+
+Precision (0.7465): About 74.65% of the instances predicted as positive
+are actually positive.
+
+Sensitivity (0.8480): The model correctly identifies about 84.80% of the
+actual positive instances.
+
+Specificity (0.2941): The model correctly identifies only about 29.41%
+of the actual negative instances.
+
+ the model demonstrates a relatively high sensitivity, indicating its
+effectiveness in detecting positive instances. However, it has
+limitations in accurately identifying negative instances, as shown by
+the low specificity. The precision indicates that the model is
+reasonably good at predicting positive instances, with a precision of
+74.65%.
+
+## What is the best tree for this size ?
+
+All decision trees have identical performance. The metrics, including
+accuracy, precision, sensitivity, and specificity, are exactly the same
+for both trees.
+
+Given that the performance metrics are identical, the decision between
+the two trees can be based on interpretability. In this case, the
+Information Gain tree may be preferred because it has more branches,
+providing more detailed information
+
+# size for training 60%:
+
+tree of information gain: (best tree)
+
+![](images/Screenshot%202023-12-02%20132009.png)
+
+tree of gain ration:
+
+![](images/Screenshot%202023-12-02%20132128.png)
+
+tree of gini index:
+
+![](images/Screenshot%202023-12-02%20132248.png)
+
+```{r}
+#Set the seed for reproducibility 60%
+set.seed(123)
+```
+
+## Split the dataset into training and testing sets
+
+```{r}
+# Subset the first dataset
+df1 <- prdataset[which(prdataset$Dataset == 1),]
+
+# Subset the second dataset
+df2 <- prdataset[which(prdataset$Dataset == 2),]
+
+# Splitting the first dataset
+n1 <- nrow(df1)  # Total number of rows in df1
+train_indices1 <- sample(1:n1, 0.6 * n1, replace = FALSE)  # Randomly select 70% of indices for training
+test_indices1 <- setdiff(1:n1, train_indices1)  # Remaining indices for testing
+
+# Splitting the second dataset
+n2 <- nrow(df2)  # Total number of rows in df2
+train_indices2 <- sample(1:n2, 0.6 * n2, replace = FALSE)  # Randomly select 70% of indices for training
+test_indices2 <- setdiff(1:n2, train_indices2)  # Remaining indices for testing
+
+# Creating the training and testing sets
+train_df1 <- df1[train_indices1, ]
+test_df1 <- df1[test_indices1, ]
+train_df2 <- df2[train_indices2, ]
+test_df2 <- df2[test_indices2, ]
+
+# Combining the 60% training sets
+combined_train <- rbind(train_df1, train_df2)
+
+# Combining the 40% testing sets
+combined_test <- rbind(test_df1, test_df2)
+```
+
+## Build the decision tree using information gain
+
+```{r}
+decision_tree <- rpart(Dataset ~ ., data = combined_train, method = "class", parms = list(split = "information"))
+```
+
+### Plot the decision tree
+
+```{r}
+rpart.plot(decision_tree)
+```
+
+the root node of interest in this data is "Aspartate_Aminotransferase."
+This means that the decision tree starts by splitting the data based on
+the value of the "Aspartate_Aminotransferase" feature.
+
+The decision tree then branches out to other internal nodes, such as
+"Total_Bilirubin," "Alamine_Aminotransferase," "Age," and "Albumin,"
+
+The leaf nodes in the decision tree represent the final predictions or
+decisions. there are two leaf nodes labeled as 1 and 2.
+
+### Make predictions on the testing set
+
+```{r}
+predictions <- predict(decision_tree, newdata = combined_test, type = "class")
+```
+
+```{r}
+table(predictions, combined_test$Dataset)
+predictions <- factor(predictions, levels = c("1", "2"))
+combined_test$Dataset <- factor(combined_test$Dataset, levels = c("1", "2"))
+
+confusionMatrix(predictions, combined_test$Dataset)
+```
+
+Accuracy (0.6538): The model's predictions are correct approximately
+65.38% of the time.
+
+Precision (0.7389): About 73.89% of the instances predicted as positive
+are actually positive.
+
+Sensitivity (0.7964): The model correctly identifies about 79.64% of the
+actual positive instances.
+
+Specificity (0.2985): The model correctly identifies only about 29.85%
+of the actual negative instances.
+
+the model demonstrates a relatively high sensitivity, indicating its
+effectiveness in detecting positive instances. However, it has
+limitations in accurately identifying negative instances, as shown by
+the low specificity. The precision indicates that the model is
+reasonably good at predicting positive instances, with a precision of
+73.89%.
+
+## Build the decision tree using gain ratio
+
+```{r}
+decision_tree <- rpart(Dataset ~ ., data = combined_train, method = "class", parms = list(split = "gain"))
+```
+
+### Plot the decision tree
+
+```{r}
+rpart.plot(decision_tree)
+```
+
+the root node of interest in this data is "Alamine_Aminotransferase."
+This means that the decision tree starts by splitting the data based on
+the value of the "Alamine_Aminotransferase" feature.
+
+The decision tree then branches out to other internal nodes, such as
+"Age," ,"Albumin" and "Total_Bilirubin."
+
+The leaf nodes in the decision tree represent the final predictions or
+decisions. there are two leaf nodes labeled as 1 and 2.
+
+### Make predictions on the testing set
+
+```{r}
+predictions <- predict(decision_tree, newdata = combined_test, type = "class")
+```
+
+```{r}
+table(predictions, combined_test$Dataset)
+predictions <- factor(predictions, levels = c("1", "2"))
+combined_test$Dataset <- factor(combined_test$Dataset, levels = c("1", "2"))
+
+confusionMatrix(predictions, combined_test$Dataset)
+```
+
+Accuracy (0.7009): The model's predictions are correct approximately
+70.09% of the time.
+
+Precision (0.7366): About 73.66% of the instances predicted as positive
+are actually positive.
+
+Sensitivity (0.9042): The model correctly identifies about 90.42% of the
+actual positive instances.
+
+Specificity (0.1940): The model correctly identifies only about 19.40%
+of the actual negative instances.
+
+the model demonstrates a high sensitivity, indicating its effectiveness
+in detecting positive instances. However, it has limitations in
+accurately identifying negative instances, as shown by the low
+specificity. The precision indicates that the model is reasonably good
+at predicting positive instances, with a precision of 73.66%.
+
+## Build the decision tree using the Gini Index
+
+```{r}
+# Build the decision tree using the Gini index
+decision_tree <- rpart(Dataset ~ ., data = combined_train, method = "class")
+```
+
+```{r}
+# Plot the decision tree
+rpart.plot(decision_tree)
+```
+
+the root node of interest in this data is "Alamine_Aminotransferase."
+This means that the decision tree starts by splitting the data based on
+the value of the "Alamine_Aminotransferase" feature.
+
+The decision tree then branches out to other internal nodes, such as
+"Age," ,"Albumin" and "Total_Bilirubin."
+
+The leaf nodes in the decision tree represent the final predictions or
+decisions. there are two leaf nodes labeled as 1 and 2.
+
+### Make predictions on the testing set
+
+```{r}
+predictions <- predict(decision_tree, newdata = combined_test, type = "class")
+
+```
+
+```{r}
+table(predictions, combined_test$Dataset)
+predictions <- factor(predictions, levels = c("1", "2"))
+combined_test$Dataset <- factor(combined_test$Dataset, levels = c("1", "2"))
+
+confusionMatrix(predictions, combined_test$Dataset)
+```
+
+Accuracy (0.7009): The model's predictions are correct approximately
+70.09% of the time.
+
+Precision (0.7366): About 73.66% of the instances predicted as positive
+are actually positive.
+
+Sensitivity (0.9042): The model correctly identifies about 90.42% of the
+actual positive instances.
+
+Specificity (0.1940): The model correctly identifies only about 19.40%
+of the actual negative instances.
+
+the model demonstrates a high sensitivity, indicating its effectiveness
+in detecting positive instances. However, it has limitations in
+accurately identifying negative instances, as shown by the low
+specificity. The precision indicates that the model is reasonably good
+at predicting positive instances, with a precision of 73.66%.
+
+## What is the best tree for this size?
+
+decision tree using information gain provides a better balance between
+sensitivity and specificity.
+
+# size for training 80%
+
+tree of information gain:
+
+![](images/Screenshot%202023-12-02%20132355.png)
+
+tree of gain ratio: best tree
+
+![](images/Screenshot%202023-12-02%20132617.png)
+
+tree of gini index: (best tree)
+
+![](images/Screenshot%202023-12-02%20132705.png)
+
+```{r}
+# Set the seed for reproducibility
+set.seed(123)
+```
+
+## Split the dataset into training and testing sets
+
+```{r}
+# Subset the first dataset
+df1 <- prdataset[which(prdataset$Dataset == 1),]
+
+# Subset the second dataset
+df2 <- prdataset[which(prdataset$Dataset == 2),]
+
+# Splitting the first dataset
+n1 <- nrow(df1)  # Total number of rows in df1
+train_indices1 <- sample(1:n1, 0.8 * n1, replace = FALSE)  # Randomly select 70% of indices for training
+test_indices1 <- setdiff(1:n1, train_indices1)  # Remaining indices for testing
+
+# Splitting the second dataset
+n2 <- nrow(df2)  # Total number of rows in df2
+train_indices2 <- sample(1:n2, 0.8 * n2, replace = FALSE)  # Randomly select 70% of indices for training
+test_indices2 <- setdiff(1:n2, train_indices2)  # Remaining indices for testing
+
+# Creating the training and testing sets
+train_df1 <- df1[train_indices1, ]
+test_df1 <- df1[test_indices1, ]
+train_df2 <- df2[train_indices2, ]
+test_df2 <- df2[test_indices2, ]
+
+# Combining the 80% training sets
+combined_train <- rbind(train_df1, train_df2)
+
+# Combining the 20% testing sets
+combined_test <- rbind(test_df1, test_df2)
+```
+
+## Build the decision tree using information gain
+
+```{r}
+decision_tree <- rpart(Dataset ~ ., data = combined_train, method = "class", parms = list(split = "information"))
+```
+
+### Plot the decision tree
+
+```{r}
+rpart.plot(decision_tree)
+```
+
+the root node of interest in this data is "Direct_Bilirubin." This means
+that the decision tree starts by splitting the data based on the value
+of the "Direct_Bilirubin" feature.
+
+The decision tree then branches out to other internal nodes, such as
+"Alamine_Aminotransferase," "Age," "Alkaline_Phosphotase,"
+"Total_Protiens," and "Aspartate_Aminotransferase."
+
+The leaf nodes in the decision tree represent the final predictions or
+decisions. there are two leaf nodes labeled as 1 and 2.
+
+### Make predictions on the testing set
+
+```{r}
+predictions <- predict(decision_tree, newdata = combined_test, type = "class")
+```
+
+```{r}
+table(predictions, combined_test$Dataset)
+predictions <- factor(predictions, levels = c("1", "2"))
+combined_test$Dataset <- factor(combined_test$Dataset, levels = c("1", "2"))
+
+confusionMatrix(predictions, combined_test$Dataset)
+```
+
+Accuracy (0.6864): The model's predictions are correct approximately
+68.64% of the time.
+
+Precision (0.7765): About 77.65% of the instances predicted as positive
+are actually positive.
+
+Sensitivity (0.7857): The model correctly identifies about 78.57% of the
+actual positive instances.
+
+Specificity (0.4412): The model correctly identifies about 44.12% of the
+actual negative instances.
+
+the model demonstrates a relatively high sensitivity, indicating its
+effectiveness in detecting positive instances. However, it has
+limitations in accurately identifying negative instances, as shown by
+the low specificity. The precision indicates that the model is
+reasonably good at predicting positive instances, with a precision of
+77.65%.
+
+## Build the decision tree using gain ratio
+
+```{r}
+decision_tree <- rpart(Dataset ~ ., data = combined_train, method = "class", parms = list(split = "gain"))
+```
+
+### Plot the decision tree
+
+```{r}
+rpart.plot(decision_tree)
+```
+
+the root node of interest in this data is "Total_Bilirubin." This means
+that the decision tree starts by splitting the data based on the value
+of the "Total_Bilirubin" feature.
+
+The decision tree then branches out to other internal nodes, such as
+"Age," "Alamine_Aminotransferase," "Albumin," "Alkaline_Phosphotase,"
+
+The leaf nodes in the decision tree represent the final predictions or
+decisions. there are two leaf nodes labeled as 1 and 2.
+
+### Make predictions on the testing set
+
+```{r}
+predictions <- predict(decision_tree, newdata = combined_test, type = "class")
+```
+
+```{r}
+table(predictions, combined_test$Dataset)
+predictions <- factor(predictions, levels = c("1", "2"))
+combined_test$Dataset <- factor(combined_test$Dataset, levels = c("1", "2"))
+
+confusionMatrix(predictions, combined_test$Dataset)
+```
+
+Accuracy (0.6864): The model's predictions are correct approximately
+68.64% of the time.
+
+Precision (0.7975): About 79.75% of the instances predicted as positive
+are actually positive.
+
+Sensitivity (0.7500): The model correctly identifies about 75.00% of the
+actual positive instances.
+
+Specificity (0.5294): The model correctly identifies about 52.94% of the
+actual negative instances.
+
+the model demonstrates a relatively high sensitivity, indicating its
+effectiveness in detecting positive instances. However, it has
+limitations in accurately identifying negative instances, as shown by
+the moderate specificity. The precision indicates that the model is
+reasonably good at predicting positive instances, with a precision of
+79.75%.
+
+## Build the decision tree using the Gini index
+
+```{r}
+decision_tree <- rpart(Dataset ~ ., data = combined_train, method = "class")
+```
+
+### Plot the decision tree
+
+```{r}
+rpart.plot(decision_tree)
+```
+
+the root node of interest in this data is "Total_Bilirubin." This means
+that the decision tree starts by splitting the data based on the value
+of the "Total_Bilirubin" feature.
+
+The decision tree then branches out to other internal nodes, such as
+"Age," "Alamine_Aminotransferase," "Albumin," "Alkaline_Phosphotase,"
+
+The leaf nodes in the decision tree represent the final predictions or
+decisions. there are two leaf nodes labeled as 1 and 2.
+
+### Make predictions on the testing set
+
+```{r}
+predictions <- predict(decision_tree, newdata = combined_test, type = "class")
+```
+
+```{r}
+table(predictions, combined_test$Dataset)
+predictions <- factor(predictions, levels = c("1", "2"))
+combined_test$Dataset <- factor(combined_test$Dataset, levels = c("1", "2"))
+
+confusionMatrix(predictions, combined_test$Dataset)
+```
+
+Accuracy (0.6864): The model's predictions are correct approximately
+68.64% of the time.
+
+Precision (0.7975): About 79.75% of the instances predicted as positive
+are actually positive.
+
+Sensitivity (0.7500): The model correctly identifies about 75.00% of the
+actual positive instances.
+
+Specificity (0.5294): The model correctly identifies about 52.94% of the
+actual negative instances.
+
+the model demonstrates a relatively high sensitivity, indicating its
+effectiveness in detecting positive instances. However, it has
+limitations in accurately identifying negative instances, as shown by
+the moderate specificity. The precision indicates that the model is
+reasonably good at predicting positive instances, with a precision of
+79.75%.
+
+## What is the best tree for this size?
+
+Both trees have similar accuracy and sensitivity values. However, the
+decision tree using Gini index-based tree has a higher specificity
+(0.5294) compared to the information gain-based tree (specificity:
+0.4412).
+
+Considering the specificity values, the decision tree using Gini index
+and gain ratio performs slightly better in terms of correctly
+identifying negative instances. However, the differences in performance
+are relatively small.
+
+# clustring
+
+our goal of clustering is to enhance our understanding of liver disease
+by grouping patients with similar attributes and to uncover hidden
+patterns or groupings within the patient data that may not be
+immediately apparent to us.
+
+This Function to calculate BCubed Precision and BCubed Recall, that will
+be called in k= 2,3,4.
+
+```{r}
+#--define function --
+# Function to calculate BCubed Precision
+calculate_bcubed_precision <- function(data) {
+  precision_values <- numeric(nrow(data))
+  
+  for (i in 1:nrow(data)) {
+    # Get all points in the same cluster
+    same_cluster <- data$Cluster[i] == data$Cluster
+    
+    # Get all points with the same external label
+    same_label <- data$Label[i] == data$Label
+    
+    # Calculate precision for this point
+    precision_values[i] <- sum(same_cluster & same_label) / sum(same_cluster)
+  }
+  
+ 
+  mean(precision_values)
+}
+
+# Function to calculate BCubed Recall
+calculate_bcubed_recall <- function(data) {
+  recall_values <- numeric(nrow(data))
+  
+  for (i in 1:nrow(data)) {
+    # Get all points with the same external label
+    same_label <- data$Label[i] == data$Label
+    
+    # Get all points in the same cluster as the current point
+    same_cluster <- data$Cluster[i] == data$Cluster
+    
+    # Calculate recall for this point
+    recall_values[i] <- sum(same_cluster & same_label) / sum(same_label)
+  }
+  
+  
+  mean(recall_values)
+}
+
+```
+
+Since clustering is an unsupervised learning method, we should omit the
+class labels.
+
+```{r}
+external_labels <- prdataset$Dataset   
+prdataset =subset (prdataset, select = -c(Dataset))
+```
+
+## Find optimal number of clusters
+
+![](images/Screenshot%202023-12-02%20225450.png){width="524"}
+
+```{r}
+set.seed(123)  # Set seed for reproducibility
+wss <- numeric(10) 
+
+  for (k in 1:10) {
+  # Run the k-means algorithm on the dataset
+  M <- kmeans(prdataset, centers = k, nstart = 25)
+  # Store the within-cluster sum of squares
+  wss[k] <- M$tot.withinss
+    }
+
+# We use the elbow method to find the optimal number of clusters.
+plot(1:10, wss, type = "b", xlab = "Number of Clusters", ylab = "WCSS",
+     main = "Elbow Method for Optimal Number of Clusters")
+```
+
+The optimal number of clusters according to the elbow method is found at
+the point where the within-cluster sum of squares (WCGSS) starts to
+decrease at a slower rate. the "elbow" appears to be at the point
+corresponding to 2 clusters, so we decide to choose sizes of clusters to
+be close from each other which is: k=2,3,4 to give us the best results.
+
+Here in the cluster 2(k=2) we will visualize it and caluclate the
+Average Silhouette width, total within-cluster sum of square,
+bcubed_precision, bcubed_recall. reason of why we choose k=2? starting
+with two clusters can provide a baseline for comparison. If the results
+are not satisfactory, we can increase the k. Also in a medical dataset,
+patients might naturally fall into 'disease' and 'no disease'
+categories.
+
+```{r}
+
+k <- 2
+set.seed(8953)
+prdataset=scale(prdataset)
+kmeans.result <- kmeans(prdataset, 2)
+# clusterng result
+kmeans.result
+```
+
+plot of k = 2:
+
+![](images/Screenshot%202023-12-02%20135143.png){width="511"}
+
+Evaluation metrics for k=2:
+
+```{r}
+#-----Average Silhouette width ----
+library(fpc)
+cluster_assignments <- kmeans.result$cluster
+diss_matrix <- dist(prdataset)
+silhouette_avg <- cluster.stats(diss_matrix, cluster_assignments)$avg.silwidth
+cat("Average Silhouette Width:", silhouette_avg, "\n")
+
+#-----calculate total within-cluster sum of square----
+total_wss_k2 <- kmeans.result$tot.withinss
+print(paste("Total within-cluster sum of squares for k=2: ", total_wss_k2))
+
+#-----calculate bcubed---
+combined_data <- data.frame(Cluster = kmeans.result$cluster, Label = external_labels)
+bcubed_precision <- calculate_bcubed_precision(combined_data)
+bcubed_recall <- calculate_bcubed_recall(combined_data)
+
+print(paste("BCubed Precision for k =", k, ":", bcubed_precision))
+print(paste("BCubed Recall for k =", k, ":", bcubed_recall))
+```
+
+result of Evaluation metrics for k=2:
+
+Average Silhouette Width: The silhouette width measures how similar an
+object is to its own cluster compared to other clusters. Total
+within-cluster sum of squares: This metric represents the total variance
+within each cluster. Lower values indicate that points within each
+cluster are closer to each other. Precision: measures the extent to
+which members of the same cluster are similar. recall: assesses how well
+the algorithm groups similar items into the same cluster.
+
+-Average Silhouette Width (0.1835652): The clusters have some overlap,
+and the distinction between them is moderate. -Total Within-Cluster Sum
+of Squares A value of 5387.44462577426 suggests there's a fair amount of
+variation within the clusters. -Precision (0.612) A score of 0.612 means
+about 61% of the points in each cluster are correctly placed. -Recall
+(0.529) A score of 0.529 means the algorithm correctly groups about 53%
+of similar points together.
+
+visualize clustering for k=2:
+
+```{r}
+ 
+library(factoextra)
+fviz_cluster(kmeans.result, data = prdataset)
+```
+
+result of plot: Blue Cluster: This cluster's core is tightly packed the
+points are closely grouped, indicating strong similarity among the data
+points. Red Cluster: The core of this cluster is more spread out. This
+spread suggests a wider variance in the characteristics of these data
+points.There is a slight overlap between the clusters around the center.
+
+here in the cluster 3 (k=3) we will visualize it and caluclate the
+Average Silhouette width, total within-cluster sum of square,
+bcubed_precision, bcubed_recall. reason of why we choose k=3? it provide
+more details. Three clusters allow for more granularity than two,
+offering a more nuanced view of the data, which can be crucial for
+decision-making.
+
+```{r}
+k <- 3
+set.seed(8953)
+prdataset=scale(prdataset)
+kmeans.result <- kmeans(prdataset, 3)
+# clusterng result
+kmeans.result
+```
+
+plot of k =3:![](images/Screenshot%202023-12-02%20135357.png)
+
+Evaluation metrics for k=3:
+
+```{r}
+#-----Average Silhouette width ----
+library(fpc)
+cluster_assignments <- kmeans.result$cluster
+diss_matrix <- dist(prdataset)
+silhouette_avg <- cluster.stats(diss_matrix, cluster_assignments)$avg.silwidth
+cat("Average Silhouette Width:", silhouette_avg, "\n")
+
+#-----calculate total within-cluster sum of square----
+total_wss_k3 <- kmeans.result$tot.withinss
+print(paste("Total within-cluster sum of squares for k=3: ", total_wss_k3))
+
+#-----calculate bcubed---
+combined_data <- data.frame(Cluster = kmeans.result$cluster, Label = external_labels)
+bcubed_precision <- calculate_bcubed_precision(combined_data)
+bcubed_recall <- calculate_bcubed_recall(combined_data)
+
+print(paste("BCubed Precision for k =", k, ":", bcubed_precision))
+print(paste("BCubed Recall for k =", k, ":", bcubed_recall))
+```
+
+result of Evaluation metrics for k=3:
+
+-Average Silhouette Width (0.1835652): This means the clusters are not
+very distinct, and there might be some overlap between them. -Total
+Within-Cluster Sum of Squares the value of 4512.82 suggests that there's
+still a fair amount of variation within the clusters. -Precision a score
+of 0.617 means about 61.7% of points in each cluster should be there,
+indicating a reasonably good level of precision. -Recall a score of
+0.443 means that around 44.3% of similar data points are placed in the
+same cluster.
+
+visualize clustering for k=3:
+
+```{r}
+library(factoextra)
+fviz_cluster(kmeans.result, data = prdataset)
+
+```
+
+result of plot: Red Group: These points are close but a bit more spread
+out than the green, showing more diversity. Green Group: Tight bunch of
+points.They are very similar to each other. Blue Group: This group is
+the most spread out, indicating the most diverse characteristics among
+its points. Overlapping: Some points from the red and green groups are
+mixed together in the middle. The red and blue groups also have some
+mixing at their edges. This means some data points could belong to more
+than one group.
+
+here in the cluster 4 (k=4) we will visualize it and caluclate the
+Average Silhouette width, total within-cluster sum of square,
+bcubed_precision, bcubed_recall. reason of why we choose k=4? it provide
+more details. Three clusters allow for more granularity than two,
+offering a more nuanced view of the data, which can be crucial for
+decision-making.
+
+```{r}
+
+k <- 4
+set.seed(8953)
+prdataset=scale(prdataset)
+kmeans.result <- kmeans(prdataset, 4)
+# clustering result
+kmeans.result
+```
+
+plot of k =4 ![](images/Screenshot%202023-12-02%20135443.png)
+
+Evaluation metrics for k=4:
+
+```{r}
+#-----Average Silhouette width ----
+library(fpc)
+cluster_assignments <- kmeans.result$cluster
+diss_matrix <- dist(prdataset)
+silhouette_avg <- cluster.stats(diss_matrix, cluster_assignments)$avg.silwidth
+cat("Average Silhouette Width:", silhouette_avg, "\n")
+
+#-----calculate total within-cluster sum of square----
+total_wss_k4 <- kmeans.result$tot.withinss
+print(paste("Total within-cluster sum of squares for k=4: ", total_wss_k4))
+
+#-----calculate bcubed---
+combined_data <- data.frame(Cluster = kmeans.result$cluster, Label = external_labels)
+bcubed_precision <- calculate_bcubed_precision(combined_data)
+bcubed_recall <- calculate_bcubed_recall(combined_data)
+
+print(paste("BCubed Precision for k =", k, ":", bcubed_precision))
+print(paste("BCubed Recall for k =", k, ":", bcubed_recall))
+```
+
+result of Evaluation metrics for k=4: Average Silhouette Width a score
+of 0.1457903 is quite low, suggesting that there's considerable overlap
+between clusters. Total within-cluster sum of squares the value of
+4226.49707113082 indicates the extent of variance within the clusters. A
+precision of 0.615 means about 61.5% of pairs of points within the same
+cluster are correctly classified. A recall of 0.307 is quite low
+indicating that many similar points are not being grouped together.
+
+visualize clustering for k=4:
+
+```{r}
+
+library(factoextra)
+fviz_cluster(kmeans.result, data = prdataset)
+
+```
+
+result of plot:
+
+Cluster (Purple): The points here are closely grouped, which implies
+that the data points within this cluster have similar characteristics
+and there's a strong cohesion among them. Cluster (Green): The points
+are also relatively close to each other. Cluster (Blue): The points here
+are widely dispersed, suggesting a high degree of variability among the
+data points in this cluster. Cluster (red): This cluster has data points
+that are spread out across a wide area, indicating significant diversity
+within the cluster. Overlap Areas: There are areas where the clusters
+seem to blend into each other, particularly between clusters (green) and
+(red), and to a lesser extent between clusters (purple) and (green).
+This overlap implies that some data points share characteristics with
+more than one cluster and to a lesser extent between clusters (blue) and
+(red).
+
+## Evaluation and Comparison
+
+for Classification:
+
+![](images/Screenshot%202023-12-02%20134129-01.png)
+
+![](images/Screenshot%202023-12-02%20134453-01.png)
+
+![](images/Screenshot%202023-12-02%20134807-01.png)
+
+What is the best size for training data?
+
+1.  Training Size: 70% (Information Gain)
+
+    -   Accuracy: 0.6875
+
+    -   Precision: 0.7465
+
+    -   Sensitivity: 0.8480
+
+    -   Specificity: 0.2941
+
+2.  Training Size: 60% (Information Gain)
+
+    -   Accuracy: 0.6538
+
+    -   Precision: 0.7389
+
+    -   Sensitivity: 0.7964
+
+    -   Specificity: 0.2985
+
+3.  Training Size: 80% (Gini Index and Gain Ratio)
+
+    -   Accuracy: 0.6864
+
+    -   Precision: 0.7975
+
+    -   Sensitivity: 0.7500
+
+    -   Specificity: 0.5294
+
+Based on the specificity metric, the third model with a training size of
+80% and using either the Gini index or gain ratio for splitting seems to
+perform the best. It has the highest specificity value (0.5294),
+indicating that it correctly identifies about 52.94% of the actual
+negative instances.
+
+for Clustering:
+
+![](images/Screenshot%202023-12-02%20140222.png)
+
+In summary here is the results of Evaluation metrics of k=2,3,4:
+
+For ( k = 2 ):
+
+\- Average Silhouette Width: 0.183\
+- Total Within-Cluster Sum of Squares (WSS): 5387.44\
+- BCubed Precision: 0.612\
+- BCubed Recall: 0.529\
+\
+For ( k = 3 ):\
+- Average Silhouette Width: 0.182\
+- Total WSS: 4512.81\
+- BCubed Precision: 0.617\
+- BCubed Recall: 0.443\
+\
+For ( k = 4 ):\
+- Average Silhouette Width: 0.145\
+- Total WSS: 4226.49\
+- BCubed Precision: 0.615\
+- BCubed Recall: 0.307\
+\
+Now, let's analyze the comparisons:\
+\
+1. \*\*Total Within-Cluster Sum of Squares (WSS)\*\*:\
+- ( k = 2 ) has the highest WSS (5387.44), indicating less compact
+clusters and broader groupings.\
+- ( k = 3 ) has a significant reduction in WSS compared to ( k = 2 ),
+indicating tighter and more compact clusters.\
+- ( k = 4 ) further reduces WSS, but the decrease is less pronounced
+compared to( k = 3 ).\
+\
+2. \*\*Average Silhouette Width\*\*:\
+in k=2, k=3 suggests that while two clusters exhibit a relatively
+stronger separation, the scenario with four clusters shows a lower
+separation between clusters.\
+\
+3. \*\*BCubed Precision and Recall\*\*:\
+- ( k = 2 ) has the highest BCubed recall (0.529), indicating better
+grouping of similar items together.\
+- ( k = 3 ) has the highest BCubed precision (0.617), suggesting purer
+clusters.\
+- ( k = 4 ) has the lowest BCubed recall (0.307), implying potential
+splitting of similar items into different clusters.
+
+The optimal number of clusters for the data presented appears to be 2,
+because it has a higher Recall and Average Silhouette Width among the
+clusters, and we think it is the best because our data set about
+healthcare, thus, objects are collected based on whether they diseases
+or no diseases.
+
+# Findings:
+
+At the outset, we curated a comprehensive dataset comprising liver
+patient records. Our primary objective was to predict the likelihood of
+liver disease among individuals. This predictive analysis aims to
+empower patients with the necessary insights, enabling them to take
+proactive measures for better health outcomes and improved quality of
+life.
+
+To get the best results, we used different ways to clean up and
+understand our data better. We looked at graphs like boxplots and
+histograms to spot any missing or outliers' points. After that, we fixed
+these issues by removing them or changing some data to make everything
+fair. These steps were crucial to standardize attributes and ensure
+uniformity. This made it easier to handle the data when we were looking
+for useful patterns.
+
+As a result, we dove into data mining techniques like classification and
+clustering. For our classification tasks, we specifically employed the
+decision tree method to build our models. Experimenting with varying
+sizes of training and testing data (three different sizes), we aimed to
+determine the optimal setup for constructing and evaluating our models.
+Here are the key findings from our exploration:
+
+Based on the results from Confusion Matrix and Statistics, the best tree
+would be of 80% training data and using either the Gini index or gain
+ratio for splitting , based on It has the highest specificity value wich
+is 0.5294.
+
+this tree illustrate the root node of interest in this data is
+"Total_Bilirubin." This means that the decision tree starts by splitting
+the data based on the value of the "Total_Bilirubin" feature.
+
+The decision tree then branches out to other internal nodes, such as
+"Age," "Alamine_Aminotransferase," "Albumin," "Alkaline_Phosphotase,"The
+leaf nodes in the decision tree represent the final predictions or
+decisions. there are two leaf nodes labeled as 1(diseases) and 2(no
+diseases).
+
+In the context of Clustering, we employed the K-means algorithm,
+exploring three different values for K to determine the optimal number
+of clusters.
+
+our goal is to distinguish between diseased and non-diseased groups for
+practical decision-making, so we think that having two distinct clusters
+might be more practically valuable.
+
+We made a comparison between Cluster 2 and 3 and took into consideration
+some measurements such as the Elbow Method (In favor of Cluster 3) and
+average silhouette width (In favor of Cluster 2) and each of them has
+measurements that distinguish it from the other.
+
+The clustering model demonstrating the optimal number of clusters is the
+2-Mean, primarily because it exhibits the highest average silhouette
+width. This indicates that items within the same cluster are closely
+related to each other while maintaining a considerable distance from
+objects in other clusters. Moreover, the visual evaluation and
+comparison, as depicted in the figures (evaluation and comparison
+section), suggest that the 2-Mean clustering model exhibits minimal
+overlapping between clusters compared to the other models. Also it was
+the Elbow point in Elbow method, so we decided that Cluster 2 is would
+be appropriate cluster.
+
+In the end for classifying patients into diseased and non-diseased
+groups, clustering might not be the best approach because clustering is
+an unsupervised learning technique and doesn't take into account the
+labeled data (diseased or non-diseased in this case).
+
+for classification tasks where the goal is to assign new data points to
+predefined classes, supervised learning algorithms like classification
+models are typically more suitable in our sitution.
+
+# References
+
+yasaxena, saum (2023) R tutorial: Learn R programming, GeeksforGeeks.
+Available at: <https://www.geeksforgeeks.org/r-tutorial/?ref=lbp>
+(Accessed: 02 December 2023).
